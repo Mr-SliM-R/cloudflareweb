@@ -1,4 +1,8 @@
-# SecureTech Solutions
+# cloudflareweb
+
+Dev web project for Cloudflare training deployment.
+
+## SecureTech Solutions
 
 Static business website for a fictional cybersecurity and cloud consulting company.
 
