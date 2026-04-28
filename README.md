@@ -11,10 +11,17 @@ Static business website for a fictional cybersecurity and cloud consulting compa
 - `index.html` - Page structure and website content
 - `style.css` - Responsive layout and visual styling
 - `script.js` - Mobile navigation, form validation, and canvas animation
+- `functions/api/status.js` - Dynamic Cloudflare Pages health-check API
+- `functions/api/contact.js` - Dynamic Cloudflare Pages contact form API
 
 ## Run Locally
 
-Open `index.html` directly in a browser. No backend, database, build step, or paid external service is required.
+Open `index.html` directly in a browser to preview the static page. The dynamic API routes run after deployment to Cloudflare Pages.
+
+Dynamic routes:
+
+- `GET /api/status`
+- `POST /api/contact`
 
 ## Cloudflare Pages Notes
 
@@ -31,3 +38,5 @@ For Cloudflare Pages, connect the GitHub repository and use:
 - Framework preset: `None`
 - Build command: leave empty
 - Build output directory: `/`
+
+Cloudflare Pages will detect the `functions/` directory and deploy the API routes as Pages Functions.

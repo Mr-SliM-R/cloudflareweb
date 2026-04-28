@@ -35,9 +35,44 @@ const observer = new IntersectionObserver(
 
 sections.forEach((section) => observer.observe(section));
 
-/* Contact form validation and demo submission */
+/* Cloudflare Pages Function status check */
+const apiStatus = document.querySelector("#apiStatus");
+
+async function loadApiStatus() {
+  if (!apiStatus) {
+    return;
+  }
+
+  if (window.location.protocol === "file:") {
+    apiStatus.textContent = "Open the deployed Cloudflare URL to run the Worker API.";
+    return;
+  }
+
+  try {
+    const response = await fetch("/api/status", { cache: "no-store" });
+
+    if (!response.ok) {
+      throw new Error("Status endpoint unavailable.");
+    }
+
+    const data = await response.json();
+    const statusTime = new Date(data.serverTime).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+
+    apiStatus.textContent = `Worker API active at ${statusTime} from ${data.colo}.`;
+  } catch (error) {
+    apiStatus.textContent = "Static assets loaded; Worker API is not available yet.";
+  }
+}
+
+loadApiStatus();
+
+/* Contact form validation and dynamic submission */
 const contactForm = document.querySelector("#contactForm");
 const formSuccess = document.querySelector("#formSuccess");
+const submitButton = contactForm.querySelector("button[type='submit']");
 
 function showError(field, message) {
   const row = field.closest(".form-row");
@@ -59,11 +94,58 @@ function validateEmail(value) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
 
-contactForm.addEventListener("submit", (event) => {
+function getFormData() {
+  const formElements = contactForm.elements;
+
+  return {
+    name: formElements.name.value.trim(),
+    email: formElements.email.value.trim(),
+    service: formElements.service.value,
+    message: formElements.message.value.trim()
+  };
+}
+
+function showServerErrors(errors) {
+  Object.entries(errors).forEach(([fieldName, message]) => {
+    const field = contactForm.elements[fieldName];
+
+    if (field) {
+      showError(field, message);
+    }
+  });
+}
+
+async function submitContactForm(payload) {
+  if (window.location.protocol === "file:") {
+    return {
+      ok: true,
+      message: "The form validated locally. Deploy on Cloudflare Pages to send it through the Worker API."
+    };
+  }
+
+  const response = await fetch("/api/contact", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json"
+    },
+    body: JSON.stringify(payload)
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    return data;
+  }
+
+  return data;
+}
+
+contactForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   formSuccess.textContent = "";
 
   const fields = [...contactForm.querySelectorAll("input, select, textarea")];
+  const payload = getFormData();
   let isValid = true;
 
   fields.forEach((field) => {
@@ -86,8 +168,26 @@ contactForm.addEventListener("submit", (event) => {
     return;
   }
 
-  formSuccess.textContent = "Thanks. Your demo request is ready to be connected to a backend later.";
-  contactForm.reset();
+  submitButton.disabled = true;
+  submitButton.textContent = "Sending...";
+
+  try {
+    const result = await submitContactForm(payload);
+
+    if (!result.ok) {
+      showServerErrors(result.errors || {});
+      formSuccess.textContent = result.message || "Please check the form and try again.";
+      return;
+    }
+
+    formSuccess.textContent = result.message;
+    contactForm.reset();
+  } catch (error) {
+    formSuccess.textContent = "The dynamic form endpoint could not be reached.";
+  } finally {
+    submitButton.disabled = false;
+    submitButton.textContent = "Send message";
+  }
 });
 
 contactForm.querySelectorAll("input, select, textarea").forEach((field) => {
