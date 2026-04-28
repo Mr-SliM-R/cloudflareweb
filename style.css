@@ -213,6 +213,22 @@ ul {
   border-radius: 999px;
 }
 
+/* Temporary deployment banner for Cloudflare Pages testing */
+.deployment-banner {
+  width: min(100% - 32px, var(--max-width));
+  margin: 18px auto 0;
+  padding: 12px 16px;
+  color: var(--primary-dark);
+  background: var(--accent-soft);
+  border: 1px solid rgba(245, 158, 11, 0.38);
+  border-radius: var(--radius);
+  font-size: 0.95rem;
+}
+
+.deployment-banner strong {
+  color: var(--ink);
+}
+
 /* Hero section */
 .hero {
   min-height: calc(100vh - 76px);
