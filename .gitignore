@@ -8,3 +8,10 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Wrangler local files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+.env*
+!.env.example
