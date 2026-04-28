@@ -25,6 +25,15 @@ Dynamic routes:
 
 - `GET /api/status`
 - `POST /api/contact`
+- `POST /api/ai`
+
+The OpenAI demo route uses a Cloudflare secret. The preferred secret name is:
+
+- `OPENAI_API_KEY`
+
+For compatibility with the current Cloudflare dashboard setup, the Worker also checks:
+
+- `OpenAI API`
 
 ## Cloudflare Pages Notes
 

@@ -30,6 +30,14 @@ export default {
       return sendJson({ ok: false, message: "Use POST to submit the contact form." }, 405);
     }
 
+    if (url.pathname === "/api/ai") {
+      if (request.method === "POST") {
+        return handleAiRequest(request, env);
+      }
+
+      return sendJson({ ok: false, message: "Use POST to ask the AI assistant." }, 405);
+    }
+
     if (url.pathname.startsWith("/api/")) {
       return sendJson({ ok: false, message: "API route not found." }, 404);
     }
@@ -84,6 +92,81 @@ async function handleContactRequest(request) {
   }
 }
 
+async function handleAiRequest(request, env) {
+  try {
+    const apiKey = getOpenAiApiKey(env);
+
+    if (!apiKey) {
+      return sendJson({
+        ok: false,
+        message: "OpenAI secret is missing. Add OPENAI_API_KEY in Cloudflare Variables and Secrets."
+      }, 500);
+    }
+
+    const contentType = request.headers.get("content-type") || "";
+
+    if (!contentType.includes("application/json")) {
+      return sendJson({ ok: false, message: "Please send JSON data." }, 415);
+    }
+
+    const body = await request.json();
+    const message = cleanText(body.message, 700);
+
+    if (!message) {
+      return sendJson({ ok: false, message: "Message is required." }, 400);
+    }
+
+    if (message.length < 4) {
+      return sendJson({ ok: false, message: "Please ask a more specific question." }, 400);
+    }
+
+    const openAiResponse = await fetch("https://api.openai.com/v1/responses", {
+      method: "POST",
+      headers: {
+        "authorization": `Bearer ${apiKey}`,
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "gpt-4.1-mini",
+        instructions: "You are a concise cybersecurity and cloud consulting assistant for SecureTech Solutions. Give practical, beginner-friendly answers. Do not ask for secrets, passwords, private keys, or API keys.",
+        input: message,
+        max_output_tokens: 260
+      })
+    });
+
+    const data = await openAiResponse.json();
+
+    if (!openAiResponse.ok) {
+      console.error("OpenAI API error", {
+        status: openAiResponse.status,
+        message: data.error?.message || "Unknown OpenAI API error"
+      });
+
+      return sendJson({
+        ok: false,
+        message: "OpenAI could not process the request right now."
+      }, 502);
+    }
+
+    const answer = extractOpenAiText(data);
+
+    if (!answer) {
+      return sendJson({
+        ok: false,
+        message: "OpenAI returned an empty response."
+      }, 502);
+    }
+
+    return sendJson({
+      ok: true,
+      answer
+    });
+  } catch (error) {
+    console.error("AI request error", error);
+    return sendJson({ ok: false, message: "The AI request could not be processed." }, 500);
+  }
+}
+
 function validateSubmission(submission) {
   const errors = {};
 
@@ -110,6 +193,27 @@ function validateSubmission(submission) {
   }
 
   return errors;
+}
+
+function getOpenAiApiKey(env) {
+  return env.OPENAI_API_KEY || env["OpenAI API"] || "";
+}
+
+function extractOpenAiText(data) {
+  if (typeof data.output_text === "string") {
+    return data.output_text.trim();
+  }
+
+  if (!Array.isArray(data.output)) {
+    return "";
+  }
+
+  return data.output
+    .flatMap((item) => item.content || [])
+    .filter((content) => content.type === "output_text" && typeof content.text === "string")
+    .map((content) => content.text)
+    .join("\n")
+    .trim();
 }
 
 function cleanText(value, maxLength) {

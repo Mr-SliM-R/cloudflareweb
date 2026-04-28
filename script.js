@@ -194,6 +194,61 @@ contactForm.querySelectorAll("input, select, textarea").forEach((field) => {
   field.addEventListener("input", () => clearError(field));
 });
 
+/* OpenAI demo assistant backed by the Cloudflare Worker */
+const aiForm = document.querySelector("#aiForm");
+const aiMessage = document.querySelector("#aiMessage");
+const aiResponse = document.querySelector("#aiResponse");
+
+if (aiForm) {
+  aiForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    const submit = aiForm.querySelector("button[type='submit']");
+    const message = aiMessage.value.trim();
+
+    aiResponse.classList.remove("has-answer");
+    aiResponse.textContent = "";
+
+    if (!message) {
+      aiResponse.textContent = "Enter a question first.";
+      return;
+    }
+
+    if (window.location.protocol === "file:") {
+      aiResponse.textContent = "Deploy to Cloudflare Workers to test the OpenAI API route.";
+      return;
+    }
+
+    submit.disabled = true;
+    submit.textContent = "Asking...";
+
+    try {
+      const response = await fetch("/api/ai", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json"
+        },
+        body: JSON.stringify({ message })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.ok) {
+        aiResponse.textContent = data.message || "The AI assistant could not answer right now.";
+        return;
+      }
+
+      aiResponse.textContent = data.answer;
+      aiResponse.classList.add("has-answer");
+    } catch (error) {
+      aiResponse.textContent = "The AI assistant endpoint could not be reached.";
+    } finally {
+      submit.disabled = false;
+      submit.textContent = "Ask assistant";
+    }
+  });
+}
+
 /* Animated cybersecurity canvas used as a local visual asset */
 const canvas = document.querySelector("#securityCanvas");
 const context = canvas.getContext("2d");

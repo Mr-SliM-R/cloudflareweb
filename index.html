@@ -179,6 +179,27 @@
       </div>
     </section>
 
+    <!-- AI assistant demo section -->
+    <section class="ai-demo section" aria-labelledby="ai-title">
+      <div class="ai-demo-content">
+        <div>
+          <p class="eyebrow">AI demo</p>
+          <h2 id="ai-title">Ask a cloud security question.</h2>
+          <p>
+            This demo sends your question to a Cloudflare Worker, which calls the OpenAI API
+            using a protected Cloudflare secret.
+          </p>
+        </div>
+
+        <form class="ai-form" id="aiForm">
+          <label for="aiMessage">Question</label>
+          <textarea id="aiMessage" name="message" rows="4" maxlength="700" placeholder="Example: How should a small business start improving cloud security?" required></textarea>
+          <button class="btn btn-primary" type="submit">Ask assistant</button>
+          <p class="ai-response" id="aiResponse" role="status"></p>
+        </form>
+      </div>
+    </section>
+
     <!-- Contact section and form -->
     <section class="contact section" id="contact" aria-labelledby="contact-title">
       <div class="contact-content">
